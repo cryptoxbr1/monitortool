@@ -1,13 +1,15 @@
 import type { TokenSnapshot, PairSnapshot } from "@/types/tokens";
 import { ARBITRUM_TOKENS } from "@/config/tokens";
 
-async function fetchJson(url: string, timeoutMs = 6000): Promise<any> {
+async function fetchJson(url: string, timeoutMs = 6000): Promise<any | null> {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(url, { headers: { accept: "application/json" }, signal: ctrl.signal });
-    if (!res.ok) throw new Error(String(res.status));
+    if (!res.ok) return null;
     return await res.json();
+  } catch {
+    return null;
   } finally {
     clearTimeout(id);
   }
@@ -17,16 +19,9 @@ async function fetchPair(pairAddress: string): Promise<Omit<PairSnapshot, "dex">
   const proxy = `/api/dexscreener/latest/dex/pairs/arbitrum/${pairAddress}`;
   const direct = `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${pairAddress}`;
   // Prefer proxy (same-origin) to avoid CORS/filters; then fall back to direct
-  let json: any | null = null;
-  try {
-    json = await fetchJson(proxy);
-  } catch {
-    try {
-      json = await fetchJson(direct);
-    } catch {
-      return { pairAddress, priceUsd: null, volume24hUsd: null, liquidityUsd: null };
-    }
-  }
+  let json = await fetchJson(proxy);
+  if (!json) json = await fetchJson(direct);
+  if (!json) return { pairAddress, priceUsd: null, volume24hUsd: null, liquidityUsd: null };
   const p = json?.pairs?.[0];
   return {
     pairAddress,
