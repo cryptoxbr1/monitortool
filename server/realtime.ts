@@ -20,19 +20,30 @@ export function getCurrentSnapshot(): TokenRealtime[] {
   return latest;
 }
 
-function mergeSnapshotsIntoHistory(prev: TokenRealtime[], next: TokenSnapshot[]): TokenRealtime[] {
+function mergeSnapshotsIntoHistory(
+  prev: TokenRealtime[],
+  next: TokenSnapshot[],
+): TokenRealtime[] {
   const map = new Map<string, TokenRealtime>();
   for (const p of prev) map.set(p.tokenName, p);
   const now = Date.now();
 
   return next.map((snap) => {
     const prevEntry = map.get(snap.tokenName);
-    const priceUniswap = snap.pairs.find((p) => p.dex === "uniswap")?.priceUsd ?? null;
-    const pricePancake = snap.pairs.find((p) => p.dex === "pancakeswap")?.priceUsd ?? null;
+    const priceUniswap =
+      snap.pairs.find((p) => p.dex === "uniswap")?.priceUsd ?? null;
+    const pricePancake =
+      snap.pairs.find((p) => p.dex === "pancakeswap")?.priceUsd ?? null;
 
-    const point: TokenHistoryPoint = { t: now, uniswap: priceUniswap, pancakeswap: pricePancake };
+    const point: TokenHistoryPoint = {
+      t: now,
+      uniswap: priceUniswap,
+      pancakeswap: pricePancake,
+    };
 
-    const history = prevEntry ? [...prevEntry.history, point].slice(-MAX_HISTORY_POINTS) : [point];
+    const history = prevEntry
+      ? [...prevEntry.history, point].slice(-MAX_HISTORY_POINTS)
+      : [point];
 
     return { ...snap, history } as TokenRealtime;
   });

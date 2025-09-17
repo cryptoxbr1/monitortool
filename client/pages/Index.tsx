@@ -41,18 +41,30 @@ export default function Index() {
       <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-background/80 border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-[hsl(var(--brand-600))] text-white grid place-items-center font-bold">A</div>
+            <div className="h-9 w-9 rounded-lg bg-[hsl(var(--brand-600))] text-white grid place-items-center font-bold">
+              A
+            </div>
             <div>
-              <div className="font-semibold leading-tight">Arbitrum Token Monitor</div>
-              <div className="text-xs text-muted-foreground">WETH pairs on Uniswap & PancakeSwap</div>
+              <div className="font-semibold leading-tight">
+                Arbitrum Token Monitor
+              </div>
+              <div className="text-xs text-muted-foreground">
+                WETH pairs on Uniswap & PancakeSwap
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`} />
+              <span
+                className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
+              />
               {connected ? "Live" : "Offline"}
-              {lastUpdated && <span className="ml-2">• Updated {lastUpdated.toLocaleTimeString()}</span>}
+              {lastUpdated && (
+                <span className="ml-2">
+                  • Updated {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -61,7 +73,9 @@ export default function Index() {
       <main className="container mx-auto px-4 py-6">
         <TokenList data={data} />
         {data.length === 0 && (
-          <div className="text-center text-sm text-muted-foreground mt-6">Loading real-time token data…</div>
+          <div className="text-center text-sm text-muted-foreground mt-6">
+            Loading real-time token data…
+          </div>
         )}
       </main>
     </div>
