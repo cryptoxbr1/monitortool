@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import TokenCard, { type TokenRealtime } from "@/components/TokenCard";
+import type { TokenRealtime } from "@/components/TokenCard";
+import TokenList from "@/components/TokenList";
 import { io, Socket } from "socket.io-client";
 
 export default function Index() {
@@ -54,13 +55,9 @@ export default function Index() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((t) => (
-            <TokenCard key={t.tokenName} token={t} />
-          ))}
-        </div>
+        <TokenList data={data} />
         {data.length === 0 && (
-          <div className="text-center text-sm text-muted-foreground mt-12">Loading real-time token data…</div>
+          <div className="text-center text-sm text-muted-foreground mt-6">Loading real-time token data…</div>
         )}
       </main>
     </div>
