@@ -1,17 +1,19 @@
 import type { TokenSnapshot, PairSnapshot } from "@/types/tokens";
 import { ARBITRUM_TOKENS } from "@/config/tokens";
 
-async function fetchJson(url: string, timeoutMs = 6000): Promise<any | null> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+async function fetchJson(url: string, timeoutMs = 10000): Promise<any | null> {
+  let timedOut = false;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => { timedOut = true; resolve(null); }, timeoutMs));
   try {
-    const res = await fetch(url, { headers: { accept: "application/json" }, signal: ctrl.signal });
+    const res = await Promise.race([
+      fetch(url, { headers: { accept: "application/json" } }),
+      timeout,
+    ]) as Response | null;
+    if (timedOut || !res) return null;
     if (!res.ok) return null;
     return await res.json();
   } catch {
     return null;
-  } finally {
-    clearTimeout(id);
   }
 }
 
