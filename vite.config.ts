@@ -2,6 +2,8 @@ import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { createServer } from "./server";
+import { attachSocketServer } from "./server/realtime";
+import { Server as IOServer } from "socket.io";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -34,6 +36,15 @@ function expressPlugin(): Plugin {
 
       // Add Express app as middleware to Vite dev server
       server.middlewares.use(app);
+
+      // Attach Socket.IO to Vite's underlying HTTP server
+      if (server.httpServer) {
+        const io = new IOServer(server.httpServer, {
+          cors: { origin: /.*$/, methods: ["GET"], credentials: false },
+          path: "/socket.io",
+        });
+        attachSocketServer(io);
+      }
     },
   };
 }
