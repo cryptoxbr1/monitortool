@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TokenRealtime } from "@/components/TokenCard";
 import TokenList from "@/components/TokenList";
+import ThemeToggle from "@/components/ThemeToggle";
 import { io, Socket } from "socket.io-client";
 
 export default function Index() {
@@ -46,10 +47,13 @@ export default function Index() {
               <div className="text-xs text-muted-foreground">WETH pairs on Uniswap & PancakeSwap</div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`} />
-            {connected ? "Live" : "Offline"}
-            {lastUpdated && <span className="ml-2">• Updated {lastUpdated.toLocaleTimeString()}</span>}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`} />
+              {connected ? "Live" : "Offline"}
+              {lastUpdated && <span className="ml-2">• Updated {lastUpdated.toLocaleTimeString()}</span>}
+            </div>
           </div>
         </div>
       </header>
