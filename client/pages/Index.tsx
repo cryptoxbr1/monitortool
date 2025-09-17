@@ -70,15 +70,9 @@ export default function Index() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <span
-                className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
-              />
-              {connected ? "Live" : "Offline"}
-              {lastUpdated && (
-                <span className="ml-2">
-                  • Updated {lastUpdated.toLocaleTimeString()}
-                </span>
-              )}
+              <span className={`h-2 w-2 rounded-full ${live ? "bg-green-500" : "bg-red-500"}`} />
+              {live ? "Live" : "Offline"}
+              {lastUpdated && <span className="ml-2">• Updated {lastUpdated.toLocaleTimeString()}</span>}
             </div>
           </div>
         </div>
