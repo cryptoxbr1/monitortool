@@ -1,29 +1,32 @@
 import type { TokenSnapshot, PairSnapshot } from "@/types/tokens";
 import { ARBITRUM_TOKENS } from "@/config/tokens";
 
-async function fetchPair(pairAddress: string): Promise<Omit<PairSnapshot, "dex"> & { base?: string; quote?: string }> {
-  const direct = `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${pairAddress}`;
-  const proxy = `/api/dexscreener/latest/dex/pairs/arbitrum/${pairAddress}`;
-  // Try direct first
+async function fetchJson(url: string, timeoutMs = 6000): Promise<any> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const r = await fetch(direct, { headers: { accept: "application/json" } });
-    if (r.ok) {
-      const j = await r.json();
-      const p = j?.pairs?.[0];
-      return {
-        pairAddress,
-        priceUsd: p?.priceUsd ? Number(p.priceUsd) : null,
-        volume24hUsd: p?.volume?.h24 != null ? Number(p.volume.h24) : null,
-        liquidityUsd: p?.liquidity?.usd != null ? Number(p.liquidity.usd) : null,
-        base: p?.baseToken?.symbol,
-        quote: p?.quoteToken?.symbol,
-      };
+    const res = await fetch(url, { headers: { accept: "application/json" }, signal: ctrl.signal });
+    if (!res.ok) throw new Error(String(res.status));
+    return await res.json();
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+async function fetchPair(pairAddress: string): Promise<Omit<PairSnapshot, "dex"> & { base?: string; quote?: string }> {
+  const proxy = `/api/dexscreener/latest/dex/pairs/arbitrum/${pairAddress}`;
+  const direct = `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${pairAddress}`;
+  // Prefer proxy (same-origin) to avoid CORS/filters; then fall back to direct
+  let json: any | null = null;
+  try {
+    json = await fetchJson(proxy);
+  } catch {
+    try {
+      json = await fetchJson(direct);
+    } catch {
+      return { pairAddress, priceUsd: null, volume24hUsd: null, liquidityUsd: null };
     }
-  } catch {}
-  // Fallback to proxy
-  const res = await fetch(proxy, { headers: { accept: "application/json" } });
-  if (!res.ok) throw new Error(`dexscreener-proxy ${res.status}`);
-  const json = await res.json();
+  }
   const p = json?.pairs?.[0];
   return {
     pairAddress,
@@ -48,7 +51,7 @@ export const TOKENS = ARBITRUM_TOKENS.map((t) => ({
 
 const ALL_PAIRS = ARBITRUM_TOKENS.flatMap((t) => t.pairs.map((p) => ({ tokenName: t.name, tokenAddress: t.tokenAddress, ...p })));
 
-export async function pollChunk(state: PollState, chunkSize = 8): Promise<{ data: TokenSnapshot[]; next: PollState; updatedAt: number }> {
+export async function pollChunk(state: PollState, chunkSize = 4): Promise<{ data: TokenSnapshot[]; next: PollState; updatedAt: number }> {
   const now = Date.now();
   const start = state.index % ALL_PAIRS.length;
   const slice = [] as typeof ALL_PAIRS;
