@@ -2,9 +2,27 @@ import type { TokenSnapshot, PairSnapshot } from "@/types/tokens";
 import { ARBITRUM_TOKENS } from "@/config/tokens";
 
 async function fetchPair(pairAddress: string): Promise<Omit<PairSnapshot, "dex"> & { base?: string; quote?: string }> {
-  const url = `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${pairAddress}`;
-  const res = await fetch(url, { headers: { accept: "application/json" } });
-  if (!res.ok) throw new Error(`dexscreener ${res.status}`);
+  const direct = `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${pairAddress}`;
+  const proxy = `/api/dexscreener/latest/dex/pairs/arbitrum/${pairAddress}`;
+  // Try direct first
+  try {
+    const r = await fetch(direct, { headers: { accept: "application/json" } });
+    if (r.ok) {
+      const j = await r.json();
+      const p = j?.pairs?.[0];
+      return {
+        pairAddress,
+        priceUsd: p?.priceUsd ? Number(p.priceUsd) : null,
+        volume24hUsd: p?.volume?.h24 != null ? Number(p.volume.h24) : null,
+        liquidityUsd: p?.liquidity?.usd != null ? Number(p.liquidity.usd) : null,
+        base: p?.baseToken?.symbol,
+        quote: p?.quoteToken?.symbol,
+      };
+    }
+  } catch {}
+  // Fallback to proxy
+  const res = await fetch(proxy, { headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error(`dexscreener-proxy ${res.status}`);
   const json = await res.json();
   const p = json?.pairs?.[0];
   return {
