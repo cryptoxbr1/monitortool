@@ -21,7 +21,12 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* Brand: Arbitrum-inspired blues */
+    --brand-400: 207 90% 54%; /* #1da1f2 like */
+    --brand-500: 210 100% 50%;
+    --brand-600: 215 100% 47%;
+
+    --primary: var(--brand-600);
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
