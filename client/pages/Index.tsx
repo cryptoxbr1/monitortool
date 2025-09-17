@@ -1,62 +1,68 @@
-import { DemoResponse } from "@shared/api";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import TokenCard, { type TokenRealtime } from "@/components/TokenCard";
+import { io, Socket } from "socket.io-client";
 
 export default function Index() {
-  const [exampleFromServer, setExampleFromServer] = useState("");
-  // Fetch users on component mount
+  const [data, setData] = useState<TokenRealtime[]>([]);
+  const [connected, setConnected] = useState(false);
+
   useEffect(() => {
-    fetchDemo();
+    let s: Socket | null = null;
+    const base = `${window.location.protocol}//${window.location.host}`;
+
+    fetch(`/api/tokenData`).then(async (r) => {
+      if (r.ok) {
+        const d = (await r.json()) as TokenRealtime[];
+        setData(d);
+      }
+    });
+
+    s = io(base, { path: "/socket.io", transports: ["websocket", "polling"] });
+    s.on("connect", () => setConnected(true));
+    s.on("disconnect", () => setConnected(false));
+    s.on("tokenUpdate", (payload: TokenRealtime[]) => {
+      setData(payload);
+    });
+
+    return () => {
+      s?.close();
+    };
   }, []);
 
-  // Example of how to fetch data from the server (if needed)
-  const fetchDemo = async () => {
-    try {
-      const response = await fetch("/api/demo");
-      const data = (await response.json()) as DemoResponse;
-      setExampleFromServer(data.message);
-    } catch (error) {
-      console.error("Error fetching hello:", error);
-    }
-  };
+  const lastUpdated = useMemo(() => {
+    const all = data.flatMap((t) => t.history.map((h) => h.t));
+    return all.length ? new Date(Math.max(...all)) : null;
+  }, [data]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-      <div className="text-center">
-        {/* TODO: FUSION_GENERATION_APP_PLACEHOLDER replace everything here with the actual app! */}
-        <h1 className="text-2xl font-semibold text-slate-800 flex items-center justify-center gap-3">
-          <svg
-            className="animate-spin h-8 w-8 text-slate-400"
-            viewBox="0 0 50 50"
-          >
-            <circle
-              className="opacity-30"
-              cx="25"
-              cy="25"
-              r="20"
-              stroke="currentColor"
-              strokeWidth="5"
-              fill="none"
-            />
-            <circle
-              className="text-slate-600"
-              cx="25"
-              cy="25"
-              r="20"
-              stroke="currentColor"
-              strokeWidth="5"
-              fill="none"
-              strokeDasharray="100"
-              strokeDashoffset="75"
-            />
-          </svg>
-          Generating your app...
-        </h1>
-        <p className="mt-4 text-slate-600 max-w-md">
-          Watch the chat on the left for updates that might need your attention
-          to finish generating
-        </p>
-        <p className="mt-4 hidden max-w-md">{exampleFromServer}</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/40">
+      <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-background/60 bg-background/80 border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-[hsl(var(--brand-600))] text-white grid place-items-center font-bold">A</div>
+            <div>
+              <div className="font-semibold leading-tight">Arbitrum Token Monitor</div>
+              <div className="text-xs text-muted-foreground">WETH pairs on Uniswap & PancakeSwap</div>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`} />
+            {connected ? "Live" : "Offline"}
+            {lastUpdated && <span className="ml-2">• Updated {lastUpdated.toLocaleTimeString()}</span>}
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {data.map((t) => (
+            <TokenCard key={t.tokenName} token={t} />
+          ))}
+        </div>
+        {data.length === 0 && (
+          <div className="text-center text-sm text-muted-foreground mt-12">Loading real-time token data…</div>
+        )}
+      </main>
     </div>
   );
 }
