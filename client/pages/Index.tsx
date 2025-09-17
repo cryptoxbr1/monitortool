@@ -1,40 +1,54 @@
-import { useEffect, useMemo, useState } from "react";
-import type { TokenRealtime } from "@/components/TokenCard";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { TokenSnapshot } from "@/types/tokens";
 import TokenList from "@/components/TokenList";
 import ThemeToggle from "@/components/ThemeToggle";
-import { io, Socket } from "socket.io-client";
+import { pollChunk, type PollState, TOKENS } from "@/lib/dexClient";
 
 export default function Index() {
-  const [data, setData] = useState<TokenRealtime[]>([]);
-  const [connected, setConnected] = useState(false);
+  const [data, setData] = useState<TokenSnapshot[]>([]);
+  const [live, setLive] = useState(false);
+  const updatedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let s: Socket | null = null;
-    const base = `${window.location.protocol}//${window.location.host}`;
+    let cancelled = false;
+    let state: PollState = { index: 0 };
+    let interval = 10000;
 
-    fetch(`/api/tokenData`).then(async (r) => {
-      if (r.ok) {
-        const d = (await r.json()) as TokenRealtime[];
-        setData(d);
+    const run = async () => {
+      try {
+        const { data: batch, next, updatedAt } = await pollChunk(state, 8);
+        state = next;
+        updatedAtRef.current = updatedAt;
+        setLive(true);
+        // merge partial batch into existing data
+        setData((prev) => {
+          const map = new Map<string, TokenSnapshot>();
+          // seed with previous
+          for (const t of prev) map.set(t.tokenName, { ...t, pairs: [...t.pairs] });
+          // ensure all tokens exist
+          for (const t of TOKENS) if (!map.has(t.tokenName)) map.set(t.tokenName, { tokenName: t.tokenName, tokenAddress: t.tokenAddress, pairs: [] });
+          // upsert pairs from batch
+          for (const t of batch) {
+            const cur = map.get(t.tokenName)!;
+            for (const p of t.pairs) {
+              const idx = cur.pairs.findIndex((x) => x.dex === p.dex);
+              if (idx >= 0) cur.pairs[idx] = p; else cur.pairs.push(p);
+            }
+          }
+          return Array.from(map.values());
+        });
+      } catch (e) {
+        setLive(false);
+        interval = Math.min(interval * 2, 60000); // backoff to 60s max
       }
-    });
-
-    s = io(base, { path: "/socket.io", transports: ["websocket", "polling"] });
-    s.on("connect", () => setConnected(true));
-    s.on("disconnect", () => setConnected(false));
-    s.on("tokenUpdate", (payload: TokenRealtime[]) => {
-      setData(payload);
-    });
-
-    return () => {
-      s?.close();
+      if (!cancelled) setTimeout(run, interval);
     };
+
+    run();
+    return () => { cancelled = true; };
   }, []);
 
-  const lastUpdated = useMemo(() => {
-    const all = data.flatMap((t) => t.history.map((h) => h.t));
-    return all.length ? new Date(Math.max(...all)) : null;
-  }, [data]);
+  const lastUpdated = useMemo(() => (updatedAtRef.current ? new Date(updatedAtRef.current) : null), [data]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/40">

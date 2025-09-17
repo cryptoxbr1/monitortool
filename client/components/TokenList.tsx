@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
-import type { TokenRealtime } from "@/components/TokenCard";
+import type { TokenSnapshot } from "@/types/tokens";
 
-export default function TokenList({ data }: { data: TokenRealtime[] }) {
+export default function TokenList({ data }: { data: TokenSnapshot[] }) {
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="min-w-full text-sm">
