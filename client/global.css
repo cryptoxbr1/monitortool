@@ -74,7 +74,11 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --brand-400: 207 90% 60%;
+    --brand-500: 210 100% 62%;
+    --brand-600: 215 100% 70%;
+
+    --primary: var(--brand-600);
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
