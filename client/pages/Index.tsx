@@ -24,15 +24,23 @@ export default function Index() {
         setData((prev) => {
           const map = new Map<string, TokenSnapshot>();
           // seed with previous
-          for (const t of prev) map.set(t.tokenName, { ...t, pairs: [...t.pairs] });
+          for (const t of prev)
+            map.set(t.tokenName, { ...t, pairs: [...t.pairs] });
           // ensure all tokens exist
-          for (const t of TOKENS) if (!map.has(t.tokenName)) map.set(t.tokenName, { tokenName: t.tokenName, tokenAddress: t.tokenAddress, pairs: [] });
+          for (const t of TOKENS)
+            if (!map.has(t.tokenName))
+              map.set(t.tokenName, {
+                tokenName: t.tokenName,
+                tokenAddress: t.tokenAddress,
+                pairs: [],
+              });
           // upsert pairs from batch
           for (const t of batch) {
             const cur = map.get(t.tokenName)!;
             for (const p of t.pairs) {
               const idx = cur.pairs.findIndex((x) => x.dex === p.dex);
-              if (idx >= 0) cur.pairs[idx] = p; else cur.pairs.push(p);
+              if (idx >= 0) cur.pairs[idx] = p;
+              else cur.pairs.push(p);
             }
           }
           return Array.from(map.values());
@@ -45,10 +53,15 @@ export default function Index() {
     };
 
     run();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const lastUpdated = useMemo(() => (updatedAtRef.current ? new Date(updatedAtRef.current) : null), [data]);
+  const lastUpdated = useMemo(
+    () => (updatedAtRef.current ? new Date(updatedAtRef.current) : null),
+    [data],
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/40">
@@ -70,9 +83,15 @@ export default function Index() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="text-xs text-muted-foreground flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${live ? "bg-green-500" : "bg-red-500"}`} />
+              <span
+                className={`h-2 w-2 rounded-full ${live ? "bg-green-500" : "bg-red-500"}`}
+              />
               {live ? "Live" : "Offline"}
-              {lastUpdated && <span className="ml-2">• Updated {lastUpdated.toLocaleTimeString()}</span>}
+              {lastUpdated && (
+                <span className="ml-2">
+                  • Updated {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
             </div>
           </div>
         </div>

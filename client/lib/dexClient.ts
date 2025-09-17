@@ -3,12 +3,17 @@ import { ARBITRUM_TOKENS } from "@/config/tokens";
 
 async function fetchJson(url: string, timeoutMs = 10000): Promise<any | null> {
   let timedOut = false;
-  const timeout = new Promise<null>((resolve) => setTimeout(() => { timedOut = true; resolve(null); }, timeoutMs));
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => {
+      timedOut = true;
+      resolve(null);
+    }, timeoutMs),
+  );
   try {
-    const res = await Promise.race([
+    const res = (await Promise.race([
       fetch(url, { headers: { accept: "application/json" } }),
       timeout,
-    ]) as Response | null;
+    ])) as Response | null;
     if (timedOut || !res) return null;
     if (!res.ok) return null;
     return await res.json();
@@ -17,13 +22,21 @@ async function fetchJson(url: string, timeoutMs = 10000): Promise<any | null> {
   }
 }
 
-async function fetchPair(pairAddress: string): Promise<Omit<PairSnapshot, "dex"> & { base?: string; quote?: string }> {
+async function fetchPair(
+  pairAddress: string,
+): Promise<Omit<PairSnapshot, "dex"> & { base?: string; quote?: string }> {
   const proxy = `/api/dexscreener/latest/dex/pairs/arbitrum/${pairAddress}`;
   const direct = `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${pairAddress}`;
   // Prefer proxy (same-origin) to avoid CORS/filters; then fall back to direct
   let json = await fetchJson(proxy);
   if (!json) json = await fetchJson(direct);
-  if (!json) return { pairAddress, priceUsd: null, volume24hUsd: null, liquidityUsd: null };
+  if (!json)
+    return {
+      pairAddress,
+      priceUsd: null,
+      volume24hUsd: null,
+      liquidityUsd: null,
+    };
   const p = json?.pairs?.[0];
   return {
     pairAddress,
@@ -46,9 +59,18 @@ export const TOKENS = ARBITRUM_TOKENS.map((t) => ({
   pairs: t.pairs,
 }));
 
-const ALL_PAIRS = ARBITRUM_TOKENS.flatMap((t) => t.pairs.map((p) => ({ tokenName: t.name, tokenAddress: t.tokenAddress, ...p })));
+const ALL_PAIRS = ARBITRUM_TOKENS.flatMap((t) =>
+  t.pairs.map((p) => ({
+    tokenName: t.name,
+    tokenAddress: t.tokenAddress,
+    ...p,
+  })),
+);
 
-export async function pollChunk(state: PollState, chunkSize = 4): Promise<{ data: TokenSnapshot[]; next: PollState; updatedAt: number }> {
+export async function pollChunk(
+  state: PollState,
+  chunkSize = 4,
+): Promise<{ data: TokenSnapshot[]; next: PollState; updatedAt: number }> {
   const now = Date.now();
   const start = state.index % ALL_PAIRS.length;
   const slice = [] as typeof ALL_PAIRS;
@@ -72,7 +94,11 @@ export async function pollChunk(state: PollState, chunkSize = 4): Promise<{ data
 
   const map = new Map<string, TokenSnapshot>();
   for (const t of TOKENS) {
-    map.set(t.tokenName, { tokenName: t.tokenName, tokenAddress: t.tokenAddress, pairs: [] });
+    map.set(t.tokenName, {
+      tokenName: t.tokenName,
+      tokenAddress: t.tokenAddress,
+      pairs: [],
+    });
   }
 
   for (const r of results) {
@@ -84,5 +110,9 @@ export async function pollChunk(state: PollState, chunkSize = 4): Promise<{ data
     }
   }
 
-  return { data: Array.from(map.values()), next: { index: (start + slice.length) % ALL_PAIRS.length }, updatedAt: now };
+  return {
+    data: Array.from(map.values()),
+    next: { index: (start + slice.length) % ALL_PAIRS.length },
+    updatedAt: now,
+  };
 }
