@@ -1,8 +1,12 @@
 import path from "path";
 import { createServer } from "./index";
 import * as express from "express";
+import http from "http";
+import { Server as IOServer } from "socket.io";
+import { attachSocketServer } from "./realtime";
 
 const app = createServer();
+const server = http.createServer(app);
 const port = process.env.PORT || 3000;
 
 // In production, serve the built SPA files
@@ -22,7 +26,11 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-app.listen(port, () => {
+// Attach Socket.IO
+const io = new IOServer(server, { path: "/socket.io" });
+attachSocketServer(io);
+
+server.listen(port, () => {
   console.log(`🚀 Fusion Starter server running on port ${port}`);
   console.log(`📱 Frontend: http://localhost:${port}`);
   console.log(`🔧 API: http://localhost:${port}/api`);
