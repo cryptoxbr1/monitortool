@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { getCurrentSnapshot, pollOnce } from "./realtime";
+import { proxyDexPair } from "./routes/dex-proxy";
 
 export function createServer() {
   const app = express();
@@ -19,6 +20,9 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Proxy DexScreener (helps with CORS/rate-limits)
+  app.get("/api/dexscreener/latest/dex/pairs/arbitrum/:pair", proxyDexPair);
 
   // Token snapshots (single fetch + in-memory history)
   app.get("/api/tokenData", async (_req, res) => {
