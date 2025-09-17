@@ -16,7 +16,7 @@ export default function Index() {
 
     const run = async () => {
       try {
-        const { data: batch, next, updatedAt } = await pollChunk(state, 8);
+        const { data: batch, next, updatedAt } = await pollChunk(state, 4);
         state = next;
         updatedAtRef.current = updatedAt;
         setLive(true);
